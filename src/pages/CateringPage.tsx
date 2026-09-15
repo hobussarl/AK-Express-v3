@@ -1,0 +1,665 @@
+import { useState, useEffect } from 'react';
+import { useLang } from '@/context/LanguageContext';
+import { supabase } from '@/lib/supabase';
+import { Vendor, CateringRequest } from '@/lib/types';
+import { QUARTERS } from '@/lib/i18n';
+import { CATERING_OPTIONS, computePricing, formatXaf, generatePin } from '@/lib/pricing';
+import PaymentModal from '@/components/PaymentModal';
+import { MOCK_VENDORS } from '@/lib/mockVendors';
+import {
+  UtensilsCrossed,
+  Truck,
+  CheckCircle2,
+  Lock,
+  Calendar,
+  User,
+  Phone,
+  MapPin,
+  Users,
+  UsersRound,
+  Wallet,
+  ClipboardList,
+  Car,
+  X,
+} from 'lucide-react';
+
+export default function CateringPage() {
+  const { t } = useLang();
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [selectedPeople, setSelectedPeople] = useState(20);
+  const [vendorId, setVendorId] = useState('');
+  const [date, setDate] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [quarter, setQuarter] = useState('');
+  const [landmark, setLandmark] = useState('');
+  const [payOpen, setPayOpen] = useState(false);
+  const [booked, setBooked] = useState(false);
+  const [bookedPin, setBookedPin] = useState('');
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customGuests, setCustomGuests] = useState('');
+  const [customBudget, setCustomBudget] = useState('');
+  const [customMenu, setCustomMenu] = useState('');
+  const [customName, setCustomName] = useState('');
+  const [customPhone, setCustomPhone] = useState('');
+  const [customQuarter, setCustomQuarter] = useState('');
+  const [customDate, setCustomDate] = useState('');
+  const [customSubmitted, setCustomSubmitted] = useState(false);
+  const [customTaxi, setCustomTaxi] = useState(false);
+  const [eventDrawerOpen, setEventDrawerOpen] = useState(false);
+  const [eventGuests, setEventGuests] = useState('');
+  const [eventBudget, setEventBudget] = useState('');
+  const [eventMenu, setEventMenu] = useState('');
+  const [eventName, setEventName] = useState('');
+  const [eventPhone, setEventPhone] = useState('');
+  const [eventQuarter, setEventQuarter] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [eventTaxi, setEventTaxi] = useState(false);
+  const [eventSubmitted, setEventSubmitted] = useState(false);
+  const eventFormValid = !!(eventGuests && eventBudget && eventName && eventPhone && eventQuarter && eventDate);
+  const eventGuestsNum = Number(eventGuests) || 0;
+  const EVENT_PER_PERSON = 1500;
+  const eventEstimate = eventGuestsNum * EVENT_PER_PERSON;
+  const autoTaxi = eventGuestsNum > 30;
+  const customFormValid = !!(customGuests && customBudget && customName && customPhone && customQuarter && customDate);
+  const formValid = !!(vendorId && name && phone && quarter && date);
+
+  const selectedOption = CATERING_OPTIONS.find((o) => o.people === selectedPeople)!;
+  const pricing = computePricing(selectedOption.price);
+  const selectedVendor = vendors.find((v) => v.id === vendorId);
+
+  useEffect(() => {
+    supabase
+      .from('vendors')
+      .select('*')
+      .order('rating', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          setVendors(data as Vendor[]);
+        } else {
+          setVendors(MOCK_VENDORS);
+        }
+      })
+      .catch(() => setVendors(MOCK_VENDORS));
+  }, []);
+
+  async function handlePaymentConfirm() {
+    if (!vendorId || !name || !phone || !quarter || !date) return;
+    const pin = generatePin();
+    const insert: Omit<CateringRequest, 'id' | 'created_at' | 'released_at'> = {
+      vendor_id: vendorId,
+      people_count: selectedPeople,
+      total_xaf: pricing.total,
+      commission_xaf: pricing.commission,
+      cook_payout_xaf: pricing.cookPayout,
+      customer_name: name,
+      customer_phone: phone,
+      quarter,
+      landmark: landmark || null,
+      delivery_date: date,
+      status: 'held_in_escrow',
+      pickup_pin: pin,
+    };
+    const { error } = await supabase.from('catering_requests').insert(insert);
+    if (!error) {
+      setBookedPin(pin);
+      setBooked(true);
+    }
+  }
+
+  function handlePayClick() {
+    if (!formValid) return;
+    setPayOpen(true);
+  }
+
+  if (booked) {
+    return (
+      <div className="px-5 pt-10 pb-4 max-w-md mx-auto">
+        <div className="bg-white rounded-2xl shadow-sm border border-amber-100 p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-9 h-9 text-green-600" />
+          </div>
+          <h2 className="text-lg font-bold text-[#1E293B] mb-2">{t.cateringBooked}</h2>
+          <p className="text-xs text-amber-700 font-semibold uppercase tracking-wider mb-3">
+            {t.yourPin}
+          </p>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            {bookedPin.split('').map((d, i) => (
+              <span
+                key={i}
+                className="w-12 h-16 bg-amber-50 rounded-xl flex items-center justify-center text-3xl font-extrabold text-[#1E293B] shadow-sm border border-amber-200"
+              >
+                {d}
+              </span>
+            ))}
+          </div>
+          <button
+            onClick={() => {
+              setBooked(false);
+              setName('');
+              setPhone('');
+              setLandmark('');
+              setDate('');
+            }}
+            className="text-sm text-amber-600 font-semibold hover:text-amber-700"
+          >
+            {t.close}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-5 pt-6 pb-4 max-w-md mx-auto">
+      {/* Header */}
+      <div className="text-center mb-6">
+        <div className="w-14 h-14 rounded-2xl bg-[#B91C1C] flex items-center justify-center mx-auto mb-3 shadow-md">
+          <UtensilsCrossed className="w-7 h-7 text-white" />
+        </div>
+        <h1 className="text-xl font-bold text-[#1E293B]">{t.cateringTitle}</h1>
+        <p className="text-xs text-slate-500 mt-2 leading-relaxed max-w-xs mx-auto">
+          {t.cateringSubtitle}
+        </p>
+      </div>
+
+      {/* Custom Group Order button */}
+      <button
+        onClick={() => setCustomOpen(!customOpen)}
+        className="w-full mb-6 flex items-center gap-3 p-4 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/50 hover:bg-amber-50 transition-colors text-left"
+      >
+        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+          <UsersRound className="w-5 h-5 text-amber-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-[#1E293B]">{t.customGroupOrder}</p>
+          <p className="text-[10px] text-slate-500 leading-tight mt-0.5">{t.customGroupDesc}</p>
+        </div>
+      </button>
+
+      {/* Custom Group Order form */}
+      {customOpen && !customSubmitted && (
+        <div className="mb-6 bg-white rounded-2xl shadow-sm border-2 border-amber-200 p-5 space-y-4 animate-[fadeIn_0.2s_ease-out]">
+          <div className="flex items-center gap-2 mb-1">
+            <ClipboardList className="w-4 h-4 text-amber-500" />
+            <h3 className="text-sm font-bold text-[#1E293B]">{t.customGroupOrder}</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label={t.customGuests} icon={Users}>
+              <input
+                value={customGuests}
+                onChange={(e) => setCustomGuests(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                placeholder={t.customGuestsPlaceholder}
+                inputMode="numeric"
+                className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </FormField>
+            <FormField label={t.customBudget} icon={Wallet}>
+              <input
+                value={customBudget}
+                onChange={(e) => setCustomBudget(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                placeholder={t.customBudgetPlaceholder}
+                inputMode="numeric"
+                className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </FormField>
+          </div>
+          <FormField label={t.customMenuRequests} icon={UtensilsCrossed}>
+            <textarea
+              value={customMenu}
+              onChange={(e) => setCustomMenu(e.target.value)}
+              placeholder={t.customMenuPlaceholder}
+              rows={3}
+              className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+            />
+          </FormField>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label={t.yourName} icon={User}>
+              <input
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder={t.namePlaceholder}
+                className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </FormField>
+            <FormField label={t.phone} icon={Phone}>
+              <input
+                value={customPhone}
+                onChange={(e) => setCustomPhone(e.target.value)}
+                placeholder={t.phonePlaceholder}
+                className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </FormField>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label={t.quarter} icon={MapPin}>
+              <select
+                value={customQuarter}
+                onChange={(e) => setCustomQuarter(e.target.value)}
+                className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-amber-400"
+              >
+                <option value="">{t.selectQuarter}</option>
+                {QUARTERS.map((q) => (
+                  <option key={q} value={q}>
+                    {q}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <FormField label={t.deliveryDate} icon={Calendar}>
+              <input
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </FormField>
+          </div>
+          <button
+            onClick={() => {
+              if (!customFormValid) return;
+              setCustomSubmitted(true);
+            }}
+            disabled={!customFormValid}
+            className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold rounded-xl transition-colors shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2"
+          >
+            <ClipboardList className="w-4 h-4" />
+            {t.customSubmit}
+          </button>
+        </div>
+      )}
+
+      {/* Custom submitted confirmation */}
+      {customSubmitted && (
+        <div className="mb-6 bg-green-50 rounded-2xl border border-green-200 p-6 text-center animate-[fadeIn_0.3s_ease-out]">
+          <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+            <CheckCircle2 className="w-7 h-7 text-green-600" />
+          </div>
+          <p className="text-sm font-bold text-green-700 mb-1">{t.customSubmitted}</p>
+          <button
+            onClick={() => {
+              setCustomSubmitted(false);
+              setCustomOpen(false);
+              setCustomGuests('');
+              setCustomBudget('');
+              setCustomMenu('');
+              setCustomName('');
+              setCustomPhone('');
+              setCustomQuarter('');
+              setCustomDate('');
+            }}
+            className="text-xs text-amber-600 font-semibold hover:text-amber-700 mt-2"
+          >
+            {t.close}
+          </button>
+        </div>
+      )}
+
+      {/* Custom Event Request button */}
+      <button
+        onClick={() => setEventDrawerOpen(true)}
+        className="w-full mb-6 flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-[#B91C1C] to-[#DC2626] text-white hover:from-[#991B1B] hover:to-[#B91C1C] transition-all shadow-lg shadow-red-900/20 text-left"
+      >
+        <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+          <Car className="w-5 h-5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-white">{t.customEventRequest}</p>
+          <p className="text-[10px] text-white/80 leading-tight mt-0.5">{t.customEventDesc}</p>
+        </div>
+      </button>
+
+      {/* Custom Event Request drawer */}
+      {eventDrawerOpen && !eventSubmitted && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-[#FFFDF5] w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] overflow-y-auto animate-[slideUp_0.3s_ease-out]">
+            <div className="sticky top-0 bg-[#FFFDF5] flex items-center justify-between p-5 pb-3 border-b border-amber-100 z-10">
+              <div className="flex items-center gap-2">
+                <Car className="w-5 h-5 text-[#B91C1C]" />
+                <h3 className="text-sm font-bold text-[#1E293B]">{t.customEventRequest}</h3>
+              </div>
+              <button
+                onClick={() => setEventDrawerOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label={t.customEventGuests} icon={Users}>
+                  <input
+                    value={eventGuests}
+                    onChange={(e) => setEventGuests(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                    placeholder={t.customEventGuestsPlaceholder}
+                    inputMode="numeric"
+                    className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </FormField>
+                <FormField label={t.customEventBudget} icon={Wallet}>
+                  <input
+                    value={eventBudget}
+                    onChange={(e) => setEventBudget(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    placeholder={t.customEventBudgetPlaceholder}
+                    inputMode="numeric"
+                    className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </FormField>
+              </div>
+              {/* Instant price estimate */}
+              {eventGuestsNum > 0 && (
+                <div className="bg-amber-50 rounded-xl p-4 border border-amber-200 animate-[fadeIn_0.2s_ease-out]">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Wallet className="w-4 h-4 text-amber-600" />
+                    <span className="text-xs font-bold text-[#1E293B]">{t.eventEstimate}</span>
+                  </div>
+                  <p className="text-2xl font-extrabold text-amber-600">{formatXaf(eventEstimate)}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">{t.eventPerPerson}</p>
+                </div>
+              )}
+              <FormField label={t.customEventMenu} icon={UtensilsCrossed}>
+                <textarea
+                  value={eventMenu}
+                  onChange={(e) => setEventMenu(e.target.value)}
+                  placeholder={t.customEventMenuPlaceholder}
+                  rows={3}
+                  className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                />
+              </FormField>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label={t.customEventName} icon={User}>
+                  <input
+                    value={eventName}
+                    onChange={(e) => setEventName(e.target.value)}
+                    placeholder={t.namePlaceholder}
+                    className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </FormField>
+                <FormField label={t.customEventPhone} icon={Phone}>
+                  <input
+                    value={eventPhone}
+                    onChange={(e) => setEventPhone(e.target.value)}
+                    placeholder={t.phonePlaceholder}
+                    className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </FormField>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label={t.customEventQuarter} icon={MapPin}>
+                  <select
+                    value={eventQuarter}
+                    onChange={(e) => setEventQuarter(e.target.value)}
+                    className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  >
+                    <option value="">{t.selectQuarter}</option>
+                    {QUARTERS.map((q) => (
+                      <option key={q} value={q}>
+                        {q}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+                <FormField label={t.customEventDate} icon={Calendar}>
+                  <input
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </FormField>
+              </div>
+              {/* Auto taxi charter note */}
+              {autoTaxi && (
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-red-50 rounded-xl border border-red-200 animate-[fadeIn_0.2s_ease-out]">
+                  <Car className="w-4 h-4 text-[#B91C1C] shrink-0" />
+                  <p className="text-[10px] text-[#B91C1C] font-semibold">{t.eventAutoTaxi}</p>
+                </div>
+              )}
+              {/* Taxi charter toggle */}
+              <button
+                onClick={() => !autoTaxi && setEventTaxi(!eventTaxi)}
+                disabled={autoTaxi}
+                className={`w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
+                  (eventTaxi || autoTaxi)
+                    ? 'border-[#B91C1C] bg-red-50'
+                    : 'border-amber-100 bg-white hover:border-amber-200'
+                } ${autoTaxi ? 'opacity-75' : ''}`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                  (eventTaxi || autoTaxi) ? 'bg-[#B91C1C]' : 'bg-amber-50'
+                }`}>
+                  <Car className={`w-5 h-5 ${(eventTaxi || autoTaxi) ? 'text-white' : 'text-amber-500'}`} />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-bold text-[#1E293B]">{t.taxiCharter}</p>
+                  <p className="text-[10px] text-slate-500 leading-tight mt-0.5">{t.taxiCharterDesc}</p>
+                </div>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                  (eventTaxi || autoTaxi) ? 'border-[#B91C1C] bg-[#B91C1C]' : 'border-slate-300'
+                }`}>
+                  {(eventTaxi || autoTaxi) && <CheckCircle2 className="w-4 h-4 text-white" />}
+                </div>
+              </button>
+              {/* Privacy note */}
+              <div className="flex items-start gap-2 bg-blue-50 rounded-xl p-3 border border-blue-100">
+                <Lock className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-blue-700 leading-relaxed">{t.eventPrivacyNote}</p>
+              </div>
+              <button
+                onClick={() => {
+                  if (!eventFormValid) return;
+                  setEventSubmitted(true);
+                }}
+                disabled={!eventFormValid}
+                className="w-full py-3.5 bg-[#B91C1C] hover:bg-[#991B1B] disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold rounded-xl transition-colors shadow-lg shadow-red-900/20 flex items-center justify-center gap-2"
+              >
+                <ClipboardList className="w-4 h-4" />
+                {t.customEventSubmit}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Event submitted confirmation */}
+      {eventSubmitted && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-[#FFFDF5] w-full max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl p-8 text-center animate-[slideUp_0.3s_ease-out]">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-9 h-9 text-green-600" />
+            </div>
+            <p className="text-sm font-bold text-green-700 mb-4">{t.customEventSubmitted}</p>
+            <button
+              onClick={() => {
+                setEventSubmitted(false);
+                setEventDrawerOpen(false);
+                setEventGuests('');
+                setEventBudget('');
+                setEventMenu('');
+                setEventName('');
+                setEventPhone('');
+                setEventQuarter('');
+                setEventDate('');
+                setEventTaxi(false);
+              }}
+              className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors"
+            >
+              {t.close}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Portion selection */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        {CATERING_OPTIONS.map((opt) => {
+          const active = selectedPeople === opt.people;
+          return (
+            <button
+              key={opt.people}
+              onClick={() => setSelectedPeople(opt.people)}
+              className={`p-4 rounded-2xl border-2 transition-all text-left ${
+                active
+                  ? 'border-amber-500 bg-amber-50 scale-[1.02]'
+                  : 'border-amber-100 bg-white hover:border-amber-300'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 mb-1">
+                <Users className={`w-4 h-4 ${active ? 'text-amber-600' : 'text-slate-400'}`} />
+                <span className={`text-sm font-bold ${active ? 'text-amber-700' : 'text-[#1E293B]'}`}>
+                  {t.people(opt.people)}
+                </span>
+              </div>
+              <p className={`text-lg font-extrabold ${active ? 'text-amber-600' : 'text-[#1E293B]'}`}>
+                {opt.price.toLocaleString('en-US')}
+              </p>
+              <p className="text-[10px] text-slate-400">{t.xaf}</p>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Form */}
+      <div className="space-y-4">
+        <FormField label={t.selectCook} icon={UtensilsCrossed}>
+          <select
+            value={vendorId}
+            onChange={(e) => setVendorId(e.target.value)}
+            className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-amber-400"
+          >
+            <option value="">{t.chooseVendor}</option>
+            {vendors.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name} — {v.quarter}
+              </option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField label={t.deliveryDate} icon={Calendar}>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-amber-400"
+          />
+        </FormField>
+
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label={t.yourName} icon={User}>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t.namePlaceholder}
+              className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </FormField>
+          <FormField label={t.phone} icon={Phone}>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder={t.phonePlaceholder}
+              className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </FormField>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label={t.quarter} icon={MapPin}>
+            <select
+              value={quarter}
+              onChange={(e) => setQuarter(e.target.value)}
+              className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-amber-400"
+            >
+              <option value="">{t.selectQuarter}</option>
+              {QUARTERS.map((q) => (
+                <option key={q} value={q}>
+                  {q}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label={t.landmark} icon={MapPin}>
+            <input
+              value={landmark}
+              onChange={(e) => setLandmark(e.target.value)}
+              placeholder={t.landmarkPlaceholder}
+              className="w-full px-4 py-3 bg-white rounded-xl border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            />
+          </FormField>
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div className="mt-6 bg-white rounded-2xl shadow-sm border border-amber-100 p-5">
+        <h3 className="text-sm font-bold text-[#1E293B] mb-4">{t.orderSummary}</h3>
+        <div className="space-y-2.5">
+          <SummaryRow label={`${t.totalFoodPrice} (${t.people(selectedPeople)})`} value={formatXaf(pricing.total)} />
+          <SummaryRow label={t.mobileMoneyFee} value={t.mobileMoneyFeeNote} muted />
+          <div className="border-t border-amber-100 my-3" />
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold text-[#1E293B]">{t.totalPayable}</span>
+            <span className="text-lg font-extrabold text-amber-600">{formatXaf(pricing.total)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action buttons */}
+      <div className="grid grid-cols-2 gap-3 mt-5">
+        <button
+          onClick={handlePayClick}
+          disabled={!formValid}
+          className="flex items-center justify-center gap-2 py-3.5 bg-amber-100 hover:bg-amber-200 disabled:opacity-50 disabled:cursor-not-allowed text-amber-700 font-bold rounded-2xl transition-colors text-sm border border-amber-200"
+        >
+          <Truck className="w-4 h-4" />
+          {t.payMomo}
+        </button>
+        <button
+          onClick={() => setCustomOpen(true)}
+          className="flex items-center justify-center gap-2 py-3.5 bg-white hover:bg-amber-50 text-amber-600 font-bold rounded-2xl transition-colors text-sm border-2 border-amber-300"
+        >
+          <ClipboardList className="w-4 h-4" />
+          {t.requestCustomQuote}
+        </button>
+      </div>
+
+      <PaymentModal
+        open={payOpen}
+        onClose={() => setPayOpen(false)}
+        amount={pricing.total}
+        onConfirm={handlePaymentConfirm}
+      />
+    </div>
+  );
+
+  function FormField({
+    label,
+    icon: Icon,
+    children,
+  }: {
+    label: string;
+    icon: typeof User;
+    children: React.ReactNode;
+  }) {
+    return (
+      <div>
+        <label className="text-xs font-semibold text-[#1E293B] px-1 mb-1.5 flex items-center gap-1.5">
+          <Icon className="w-3.5 h-3.5 text-amber-500" />
+          {label}
+        </label>
+        {children}
+      </div>
+    );
+  }
+
+  function SummaryRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+    return (
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-slate-500">{label}</span>
+        <span className={`text-xs font-semibold ${muted ? 'text-slate-400' : 'text-[#1E293B]'}`}>
+          {value}
+        </span>
+      </div>
+    );
+  }
+}
