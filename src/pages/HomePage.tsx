@@ -190,7 +190,7 @@ export default function HomePage({ onOrder }: Props) {
       </div>
 
       {/* Quarter dropdown */}
-      <div className="px-5 mt-3 max-w-md mx-auto">
+      <div className="px-5 mt-3 max-w-md mx-auto relative z-50">
         <div ref={quarterRef} className="relative">
           <button
             onClick={() => {
@@ -216,7 +216,7 @@ export default function HomePage({ onOrder }: Props) {
           </button>
 
           {quarterOpen && (
-            <div className="absolute z-20 top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-amber-100 overflow-hidden animate-[fadeIn_0.15s_ease-out]">
+            <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-amber-100 overflow-hidden animate-[fadeIn_0.15s_ease-out]">
               <div className="p-2 border-b border-amber-50">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
