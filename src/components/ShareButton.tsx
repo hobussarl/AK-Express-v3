@@ -71,63 +71,71 @@ export default function ShareButton() {
 
       {/* Share Pop-up Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl relative border border-amber-100">
+        <div 
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+        >
+          {/* Stop Propagation keeps clicks INSIDE the box from closing it */}
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl w-full max-w-xs p-4 shadow-xl relative border border-amber-100 my-auto max-h-[90vh] overflow-y-auto"
+          >
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b pb-3 mb-4">
-              <h3 className="font-bold text-gray-800 text-base flex items-center gap-2">
-                <Share2 className="w-5 h-5 text-amber-500" />
+            <div className="flex items-center justify-between border-b pb-2 mb-3">
+              <h3 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                <Share2 className="w-4 h-4 text-amber-500" />
                 Share App
               </h3>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Social Share Grid */}
-            <div className="grid grid-cols-3 gap-3 mb-5">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               {shareOptions.map((option) => (
                 <a
                   key={option.name}
                   href={option.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-amber-50/50 transition-colors text-center group"
+                  onClick={() => setIsOpen(false)}
+                  className="flex flex-col items-center gap-1 p-1.5 rounded-xl hover:bg-amber-50/50 transition-colors text-center group"
                 >
-                  <div className={`p-3 rounded-full ${option.color} shadow-sm group-hover:scale-105 transition-transform`}>
-                    <option.icon className="w-5 h-5" />
+                  <div className={`p-2.5 rounded-full ${option.color} shadow-sm group-hover:scale-105 transition-transform`}>
+                    <option.icon className="w-4 h-4" />
                   </div>
-                  <span className="text-[11px] font-semibold text-gray-700 leading-tight">
+                  <span className="text-[10px] font-semibold text-gray-700 leading-tight">
                     {option.name}
                   </span>
                 </a>
               ))}
             </div>
 
-            {/* Copy Link Action Bar with Extra Padding */}
-            <div className="bg-gray-50 rounded-xl p-2 flex items-center gap-2 border border-gray-200">
+            {/* Copy Link Action Bar */}
+            <div className="bg-gray-50 rounded-xl p-1.5 flex items-center gap-1.5 border border-gray-200">
               <input
                 type="text"
                 readOnly
                 value={shareUrl}
-                className="bg-transparent text-[11px] text-gray-600 flex-1 px-2 outline-none truncate"
+                className="bg-transparent text-[10px] text-gray-600 flex-1 px-1.5 outline-none truncate"
               />
               <button
                 onClick={handleCopy}
-                className="flex items-center justify-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition-all active:scale-95 shrink-0 whitespace-nowrap min-w-[95px]"
+                className="flex items-center justify-center gap-1 px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[11px] font-bold transition-all active:scale-95 shrink-0 whitespace-nowrap"
               >
                 {copied ? (
                   <>
-                    <Check className="w-4 h-4 shrink-0" />
+                    <Check className="w-3.5 h-3.5 shrink-0" />
                     <span>Copied!</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4 shrink-0" />
+                    <Copy className="w-3.5 h-3.5 shrink-0" />
                     <span>Copy Link</span>
                   </>
                 )}
