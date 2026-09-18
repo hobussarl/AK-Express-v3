@@ -604,13 +604,13 @@ export const dict: Record<Lang, Dict> = {
 };
 
 export const QUARTERS = [
-  'Bonaberi',
   'Makepe',
   'Bonamoussadi',
+  'Akwa',
+  'Bonabéri',
   'Kotto',
   'Logbessou',
   'Logpom',
-  'Akwa',
   'Bonanjo',
   'Bonapriso',
   'Ndogbong',

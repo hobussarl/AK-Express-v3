@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLang } from '@/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import { Vendor, DishType } from '@/lib/types';
@@ -21,6 +21,8 @@ import {
   Drumstick,
   LayoutGrid,
   BadgeCheck,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 
 type CategoryFilter = 'all' | 'achu' | 'kati_kati' | 'full_menu';
@@ -36,29 +38,58 @@ export default function HomePage({ onOrder }: Props) {
   const [search, setSearch] = useState('');
   const [quarter, setQuarter] = useState<string>('');
   const [category, setCategory] = useState<CategoryFilter>('all');
+  const [quarterOpen, setQuarterOpen] = useState(false);
+  const [quarterSearch, setQuarterSearch] = useState('');
+  const quarterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchVendors();
-  }, [quarter]);
+  }, []);
 
   async function fetchVendors() {
     setLoading(true);
     try {
-      let query = supabase.from('vendors').select('*').order('rating', { ascending: false });
-      if (quarter) query = query.eq('quarter', quarter);
-      const { data, error } = await query;
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('*')
+        .order('rating', { ascending: false });
       if (!error && data && data.length > 0) {
         setVendors(data as Vendor[]);
       } else {
-        const filtered = quarter ? MOCK_VENDORS.filter((v) => v.quarter === quarter) : MOCK_VENDORS;
-        setVendors(filtered);
+        setVendors(MOCK_VENDORS);
       }
     } catch {
-      const filtered = quarter ? MOCK_VENDORS.filter((v) => v.quarter === quarter) : MOCK_VENDORS;
-      setVendors(filtered);
+      setVendors(MOCK_VENDORS);
     }
     setLoading(false);
   }
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (quarterRef.current && !quarterRef.current.contains(e.target as Node)) {
+        setQuarterOpen(false);
+      }
+    }
+    if (quarterOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [quarterOpen]);
+
+  const quarterCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    vendors.forEach((v) => {
+      counts[v.quarter] = (counts[v.quarter] || 0) + 1;
+    });
+    return counts;
+  }, [vendors]);
+
+  const totalCooks = vendors.length;
+
+  const filteredQuarters = useMemo(() => {
+    if (!quarterSearch.trim()) return QUARTERS;
+    return QUARTERS.filter((q) =>
+      q.toLowerCase().includes(quarterSearch.toLowerCase().trim()),
+    );
+  }, [quarterSearch]);
 
   const filtered = vendors.filter((v) => {
     const matchesSearch =
@@ -68,7 +99,8 @@ export default function HomePage({ onOrder }: Props) {
       category === 'all' ||
       v.dish_type === category ||
       (category === 'full_menu' && v.dish_type === 'full_menu');
-    return matchesSearch && matchesCategory;
+    const matchesQuarter = !quarter || v.quarter === quarter;
+    return matchesSearch && matchesCategory && matchesQuarter;
   });
 
   const categoryTabs: { id: CategoryFilter; label: string; icon: typeof Utensils }[] = [
@@ -157,32 +189,102 @@ export default function HomePage({ onOrder }: Props) {
         </div>
       </div>
 
-      {/* Quarter chips */}
-      <div className="px-5 mt-3 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-2 pb-1 w-max">
+      {/* Quarter dropdown */}
+      <div className="px-5 mt-3 max-w-md mx-auto">
+        <div ref={quarterRef} className="relative">
           <button
-            onClick={() => setQuarter('')}
-            className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-              quarter === ''
-                ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30'
-                : 'bg-[#1E293B] text-white hover:bg-slate-700'
-            }`}
+            onClick={() => {
+              setQuarterOpen((o) => !o);
+              setQuarterSearch('');
+            }}
+            className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-white rounded-2xl shadow-sm border border-amber-100 text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all"
           >
-            {t.allQuarters}
+            <span className="flex items-center gap-2 min-w-0">
+              <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="font-semibold truncate">
+                {quarter || t.allQuarters}
+              </span>
+            </span>
+            <span className="flex items-center gap-2 shrink-0">
+              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                {quarter ? `${quarterCounts[quarter] || 0}` : `${totalCooks}`}
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 text-slate-400 transition-transform ${quarterOpen ? 'rotate-180' : ''}`}
+              />
+            </span>
           </button>
-          {QUARTERS.map((q) => (
-            <button
-              key={q}
-              onClick={() => setQuarter(q)}
-              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                quarter === q
-                  ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30'
-                  : 'bg-[#1E293B] text-white hover:bg-slate-700'
-              }`}
-            >
-              {q}
-            </button>
-          ))}
+
+          {quarterOpen && (
+            <div className="absolute z-20 top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-amber-100 overflow-hidden animate-[fadeIn_0.15s_ease-out]">
+              <div className="p-2 border-b border-amber-50">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    autoFocus
+                    value={quarterSearch}
+                    onChange={(e) => setQuarterSearch(e.target.value)}
+                    placeholder={t.searchPlaceholder}
+                    className="w-full pl-9 pr-3 py-2.5 bg-amber-50/50 rounded-xl text-xs text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto py-1">
+                {/* All Quarters option */}
+                <button
+                  onClick={() => {
+                    setQuarter('');
+                    setQuarterOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors ${
+                    quarter === '' ? 'bg-amber-50' : 'hover:bg-amber-50/50'
+                  }`}
+                >
+                  <span className={`text-sm font-semibold ${quarter === '' ? 'text-amber-600' : 'text-[#1E293B]'}`}>
+                    {t.allQuarters}
+                  </span>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
+                      {totalCooks}
+                    </span>
+                    {quarter === '' && <Check className="w-4 h-4 text-amber-500" />}
+                  </span>
+                </button>
+                {filteredQuarters.length === 0 ? (
+                  <p className="px-4 py-3 text-xs text-slate-400 text-center">{t.noVendors}</p>
+                ) : (
+                  filteredQuarters.map((q) => {
+                    const count = quarterCounts[q] || 0;
+                    const active = quarter === q;
+                    return (
+                      <button
+                        key={q}
+                        onClick={() => {
+                          setQuarter(q);
+                          setQuarterOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors ${
+                          active ? 'bg-amber-50' : 'hover:bg-amber-50/50'
+                        }`}
+                      >
+                        <span className={`text-sm font-semibold ${active ? 'text-amber-600' : 'text-[#1E293B]'}`}>
+                          {q}
+                        </span>
+                        <span className="flex items-center gap-2 shrink-0">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            count > 0 ? 'text-amber-600 bg-amber-50' : 'text-slate-300 bg-slate-50'
+                          }`}>
+                            {count}
+                          </span>
+                          {active && <Check className="w-4 h-4 text-amber-500" />}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
