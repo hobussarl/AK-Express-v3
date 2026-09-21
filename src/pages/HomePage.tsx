@@ -442,11 +442,12 @@ const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-      </div>
-      <VendorRegisterModal
+        <VendorRegisterModal
   isOpen={isVendorModalOpen}
   onClose={() => setIsVendorModalOpen(false)}
 />
+      </div>
+      
     );
   }
 }
