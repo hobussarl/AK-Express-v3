@@ -42,7 +42,7 @@ export default function HomePage({ onOrder }: Props) {
   const [quarterOpen, setQuarterOpen] = useState(false);
   const [quarterSearch, setQuarterSearch] = useState('');
   const quarterRef = useRef<HTMLDivElement>(null);
-
+const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   useEffect(() => {
     fetchVendors();
   }, []);
