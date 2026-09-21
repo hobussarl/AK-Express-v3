@@ -443,6 +443,10 @@ const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
           </button>
         </div>
       </div>
+      <VendorRegisterModal
+  isOpen={isVendorModalOpen}
+  onClose={() => setIsVendorModalOpen(false)}
+/>
     );
   }
 }
