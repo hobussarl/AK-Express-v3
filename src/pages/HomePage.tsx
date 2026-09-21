@@ -307,6 +307,12 @@ const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
       <div className="px-5 mt-8">
         <div className="flex items-baseline justify-between mb-4">
           <h2 className="text-lg font-bold text-[#1E293B]">{t.allCooks}</h2>
+          <button
+  onClick={() => setIsVendorModalOpen(true)}
+  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg shadow transition-all flex items-center gap-2 text-sm"
+>
+  <span>👨‍🍳</span> Register Your Kitchen
+</button>
           <span className="text-xs font-medium text-amber-600">
             {t.cooksCount(filtered.length)}
           </span>
