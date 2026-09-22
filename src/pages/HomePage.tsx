@@ -6,8 +6,8 @@ import { QUARTERS } from '@/lib/i18n';
 import { getVendorImage, HERO_IMAGE } from '@/lib/images';
 import { formatXaf } from '@/lib/pricing';
 import { MOCK_VENDORS } from '@/lib/mockVendors';
-import ShareButton from '@/components/ShareButton';
-import { VendorRegisterModal } from '../components/VendorRegisterModal';
+import ShareButton from "../components/ShareButton";
+import { VendorRegisterModal } from "../components/VendorRegisterModal";
 import {
   Search,
   Utensils,
@@ -24,6 +24,7 @@ import {
   BadgeCheck,
   ChevronDown,
   Check,
+} from "lucide-react";
 } from 'lucide-react';
 
 type CategoryFilter = 'all' | 'achu' | 'kati_kati' | 'full_menu';
