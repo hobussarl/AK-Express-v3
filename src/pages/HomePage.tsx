@@ -28,7 +28,7 @@ interface Props {
   onOrder: (vendor: any) => void;
 }
 
-export default function HomePage({ onOrder }: Props) {
+export function HomePage({ onOrder }: Props) {
   const { t } = useLang();
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
