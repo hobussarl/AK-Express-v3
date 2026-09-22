@@ -25,7 +25,6 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react";
-} from 'lucide-react';
 
 type CategoryFilter = 'all' | 'achu' | 'kati_kati' | 'full_menu';
 
