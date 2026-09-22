@@ -45,6 +45,12 @@ function Header() {
             </button>
             <Languages className="w-3.5 h-3.5 text-amber-400 mr-1" />
           </div>
+          <button
+  onClick={onOpenVendorModal}
+  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-1 shadow-sm"
+>
+  <span>👨‍🍳</span> Become a Cook
+</button>
         </div>
       </div>
     </header>
