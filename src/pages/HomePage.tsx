@@ -57,7 +57,6 @@ export default function HomePage({ onOrder }: Props) {
 
   return (
     <div className="min-h-screen bg-[#FFFDF5] pb-24">
-      <Header onOpenVendorModal={() => setIsVendorModalOpen(true)} />
 
       <div className="px-5 pt-4 pb-2">
         <div className="relative rounded-2xl overflow-hidden shadow-lg border border-amber-100 bg-amber-900 min-h-[140px] flex items-center p-5">
