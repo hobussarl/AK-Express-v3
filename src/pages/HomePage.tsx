@@ -215,4 +215,3 @@ export default function HomePage({ onOrder }: Props) {
     </div>
   );
 }
-export default HomePage;
