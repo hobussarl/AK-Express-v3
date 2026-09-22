@@ -7,7 +7,7 @@ import { getVendorImage, HERO_IMAGE } from '@/lib/images';
 import { formatXaf } from '@/lib/pricing';
 import { MOCK_VENDORS } from '@/lib/mockVendors';
 import ShareButton from '@/components/ShareButton';
-import { VendorRegisterModal } from '@/components/VendorRegisterModal';
+import { VendorRegisterModal } from '../components/VendorRegisterModal';
 import {
   Search,
   Utensils,
