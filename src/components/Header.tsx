@@ -1,8 +1,13 @@
+import React from 'react';
 import { useLang } from '@/context/LanguageContext';
 import { Languages } from 'lucide-react';
 import ShareButton from './ShareButton';
 
-function Header() {
+interface HeaderProps {
+  onOpenVendorModal?: () => void;
+}
+
+export function Header({ onOpenVendorModal }: HeaderProps) {
   const { lang, setLang } = useLang();
   const isEn = lang === 'en';
 
@@ -20,12 +25,22 @@ function Header() {
             <p className="text-amber-600 text-[10px] font-medium">Express</p>
           </div>
         </div>
+
         <div className="flex items-center gap-2">
+          <button
+            onClick={onOpenVendorModal}
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-1 shadow-sm"
+          >
+            <span>👨‍🍳</span> Become a Cook
+          </button>
+
           <ShareButton />
+
           <div className="flex items-center gap-1 bg-white rounded-full border border-amber-200 p-0.5 shadow-sm">
+            <Languages className="w-3.5 h-3.5 text-amber-400 mr-1 ml-1" />
             <button
               onClick={() => setLang('en')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+              className={`px-2 py-0.5 rounded-full text-xs font-bold transition-all ${
                 isEn
                   ? 'bg-amber-500 text-white shadow-sm'
                   : 'text-slate-500 hover:text-amber-600'
@@ -35,7 +50,7 @@ function Header() {
             </button>
             <button
               onClick={() => setLang('fr')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+              className={`px-2 py-0.5 rounded-full text-xs font-bold transition-all ${
                 !isEn
                   ? 'bg-amber-500 text-white shadow-sm'
                   : 'text-slate-500 hover:text-amber-600'
@@ -43,19 +58,11 @@ function Header() {
             >
               FR
             </button>
-            <Languages className="w-3.5 h-3.5 text-amber-400 mr-1" />
           </div>
-          <button
-  onClick={onOpenVendorModal}
-  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-1 shadow-sm"
->
-  <span>👨‍🍳</span> Become a Cook
-</button>
         </div>
       </div>
     </header>
   );
 }
 
-export { Header };
 export default Header;
