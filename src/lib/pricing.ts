@@ -18,8 +18,11 @@ export function computePricing(totalXaf: number): PriceBreakdown {
   return { total: totalXaf, commission, gatewayFee, payoutFee, cookPayout };
 }
 
-export function formatXaf(n: number): string {
-  return n.toLocaleString('en-US') + ' XAF';
+export function formatXaf(n?: number | null): string {
+  if (n === undefined || n === null || isNaN(n)) {
+    return '0 FCFA';
+  }
+  return `${n.toLocaleString('en-US')} FCFA`;
 }
 
 export function generatePin(): string {
