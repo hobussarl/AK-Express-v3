@@ -31,7 +31,7 @@ export function Header({ onOpenVendorModal }: HeaderProps) {
     <header className="sticky top-0 z-40 bg-[#FFFDF5]/95 backdrop-blur-md border-b border-amber-100/80 px-3 py-2">
       <div className="max-w-md mx-auto flex items-center justify-between gap-1.5">
         
-        {/* Logo */}
+        {/* Red AK Badge + Logo */}
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-[#B91C1C] flex items-center justify-center shadow-sm shrink-0">
             <span className="text-white font-bold text-xs">AK</span>
@@ -44,21 +44,20 @@ export function Header({ onOpenVendorModal }: HeaderProps) {
           </div>
         </div>
 
-        {/* Action Area */}
+        {/* Header Actions */}
         <div className="flex items-center gap-1.5">
-          {/* Become a Cook Trigger */}
+          {/* Become a Cook Button */}
           {onOpenVendorModal && (
             <button
               onClick={onOpenVendorModal}
               className="px-2 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-[10px] transition-colors flex items-center gap-1 shadow-sm shrink-0"
-              title="Become a Cook"
             >
               <ChefHat className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Become a Cook</span>
+              <span className="hidden sm:inline">Cook</span>
             </button>
           )}
 
-          {/* Original Share App Button */}
+          {/* Original Share App Orange Button */}
           <button
             onClick={handleShare}
             className="bg-amber-500 hover:bg-amber-600 text-white px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1 shadow-sm leading-tight text-left shrink-0"
@@ -69,7 +68,7 @@ export function Header({ onOpenVendorModal }: HeaderProps) {
             </span>
           </button>
 
-          {/* Original EN | FR Language Toggle */}
+          {/* Original EN | FR Toggle */}
           <div className="flex items-center gap-1 border border-amber-200/80 rounded-full px-2 py-1 bg-white shadow-sm shrink-0">
             <button
               onClick={() => setLang('en')}
