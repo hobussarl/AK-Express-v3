@@ -3,9 +3,8 @@ import { useLang } from '@/context/LanguageContext';
 import { supabase } from '@/lib/supabase';
 import { Vendor, DishType } from '@/lib/types';
 import { getVendorImage, HERO_IMAGE } from '@/lib/images';
-import { formatXaf } from '@/lib/pricing';
 import { MOCK_VENDORS } from '@/lib/mockVendors';
-import { VendorRegisterModal } from '@/components/VendorRegisterModal';
+import { QUARTERS } from '@/lib/i18n';
 import {
   Search,
   Utensils,
@@ -34,7 +33,7 @@ export default function HomePage({ onOrder }: Props) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
-  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
+  const [selectedQuarter, setSelectedQuarter] = useState<string>('all');
 
   useEffect(() => {
     async function fetchVendors() {
@@ -61,7 +60,9 @@ export default function HomePage({ onOrder }: Props) {
     if (!matchesSearch) return false;
     if (selectedCategory === 'all') return true;
     if (selectedCategory === 'full_menu') return v.dish_type === 'full_menu';
-    return v.dish_type === selectedCategory;
+    if (v.dish_type !== selectedCategory) return false;
+    if (selectedQuarter !== 'all' && v.quarter !== selectedQuarter) return false;
+    return true;
   });
 
   const categoryTabs: { id: CategoryFilter; label: string; icon: typeof Utensils }[] = [
@@ -87,7 +88,8 @@ export default function HomePage({ onOrder }: Props) {
             backgroundRepeat: 'repeat',
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/60 to-[#FFFDF5]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/65 to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#FFFDF5] via-transparent to-transparent" />
         <div className="relative z-10 px-5 pt-8 pb-4 max-w-md mx-auto">
           <div className="inline-flex items-center gap-1.5 bg-amber-500/90 backdrop-blur-sm rounded-full px-3 py-1 mb-4">
             <Flame className="w-3.5 h-3.5 text-white" />
@@ -140,6 +142,35 @@ export default function HomePage({ onOrder }: Props) {
         </div>
       </div>
 
+      {/* Quarter filter pills */}
+      <div className="px-5 mt-3 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-2 pb-1 w-max">
+          <button
+            onClick={() => setSelectedQuarter('all')}
+            className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+              selectedQuarter === 'all'
+                ? 'bg-[#1E293B] text-white shadow-md'
+                : 'bg-white text-slate-500 border border-amber-100 hover:border-amber-300'
+            }`}
+          >
+            {t.allQuarters}
+          </button>
+          {QUARTERS.map((q) => (
+            <button
+              key={q}
+              onClick={() => setSelectedQuarter(q)}
+              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                selectedQuarter === q
+                  ? 'bg-[#1E293B] text-white shadow-md'
+                  : 'bg-white text-slate-500 border border-amber-100 hover:border-amber-300'
+              }`}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Feature cards */}
       <div className="px-5 mt-6">
         <div className="grid grid-cols-3 gap-3">
@@ -176,12 +207,6 @@ export default function HomePage({ onOrder }: Props) {
               {t.cooksCount(filtered.length)}
             </span>
           </div>
-          <button
-            onClick={() => setIsVendorModalOpen(true)}
-            className="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition"
-          >
-            {t.navVendor}
-          </button>
         </div>
 
         {loading ? (
@@ -203,10 +228,6 @@ export default function HomePage({ onOrder }: Props) {
         )}
       </div>
 
-      <VendorRegisterModal
-        isOpen={isVendorModalOpen}
-        onClose={() => setIsVendorModalOpen(false)}
-      />
     </div>
   );
 
