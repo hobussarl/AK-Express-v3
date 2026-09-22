@@ -1,13 +1,11 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLang } from '@/context/LanguageContext';
-import { supabase } from '@/lib/supabase';
-import { Vendor, DishType } from '@/lib/types';
-import { QUARTERS } from '@/lib/i18n';
+import Header from '../components/Header';
+import ShareButton from '../components/ShareButton';
+import { VendorRegisterModal } from '../components/VendorRegisterModal';
 import { getVendorImage, HERO_IMAGE } from '@/lib/images';
 import { formatXaf } from '@/lib/pricing';
 import { MOCK_VENDORS } from '@/lib/mockVendors';
-import ShareButton from "../components/ShareButton";
-import { VendorRegisterModal } from "../components/VendorRegisterModal";
 import {
   Search,
   Utensils,
@@ -24,425 +22,204 @@ import {
   BadgeCheck,
   ChevronDown,
   Check,
-} from "lucide-react";
+} from 'lucide-react';
 
 type CategoryFilter = 'all' | 'achu' | 'kati_kati' | 'full_menu';
 
 interface Props {
-  onOrder: (vendor: Vendor) => void;
+  onOrder: (vendor: any) => void;
 }
 
 export default function HomePage({ onOrder }: Props) {
   const { t } = useLang();
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [quarter, setQuarter] = useState<string>('');
-  const [category, setCategory] = useState<CategoryFilter>('all');
-  const [quarterOpen, setQuarterOpen] = useState(false);
-  const [quarterSearch, setQuarterSearch] = useState('');
-  const quarterRef = useRef<HTMLDivElement>(null);
-const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
-  useEffect(() => {
-    fetchVendors();
-  }, []);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
+  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
 
-  async function fetchVendors() {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('vendors')
-        .select('*')
-        .order('rating', { ascending: false });
-      if (!error && data && data.length > 0) {
-        setVendors(data as Vendor[]);
-      } else {
-        setVendors(MOCK_VENDORS);
-      }
-    } catch {
-      setVendors(MOCK_VENDORS);
-    }
+  useEffect(() => {
+    setVendors(MOCK_VENDORS);
     setLoading(false);
-  }
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (quarterRef.current && !quarterRef.current.contains(e.target as Node)) {
-        setQuarterOpen(false);
-      }
-    }
-    if (quarterOpen) document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [quarterOpen]);
-
-  const quarterCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    vendors.forEach((v) => {
-      counts[v.quarter] = (counts[v.quarter] || 0) + 1;
-    });
-    return counts;
-  }, [vendors]);
-
-  const totalCooks = vendors.length;
-
-  const filteredQuarters = useMemo(() => {
-    if (!quarterSearch.trim()) return QUARTERS;
-    return QUARTERS.filter((q) =>
-      q.toLowerCase().includes(quarterSearch.toLowerCase().trim()),
-    );
-  }, [quarterSearch]);
+  }, []);
 
   const filtered = vendors.filter((v) => {
     const matchesSearch =
-      v.name.toLowerCase().includes(search.toLowerCase()) ||
-      v.specialty.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory =
-      category === 'all' ||
-      v.dish_type === category ||
-      (category === 'full_menu' && v.dish_type === 'full_menu');
-    const matchesQuarter = !quarter || v.quarter === quarter;
-    return matchesSearch && matchesCategory && matchesQuarter;
+      v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      v.quarter.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      v.specialty.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+    if (selectedCategory === 'all') return true;
+    if (selectedCategory === 'achu') return v.servesAchu;
+    if (selectedCategory === 'kati_kati') return v.servesKatiKati;
+    if (selectedCategory === 'full_menu') return v.servesAchu && v.servesKatiKati;
+    return true;
   });
 
-  const categoryTabs: { id: CategoryFilter; label: string; icon: typeof Utensils }[] = [
-    { id: 'all', label: t.catAllCooks, icon: Utensils },
-    { id: 'achu', label: t.catAchuSpecialists, icon: Soup },
-    { id: 'kati_kati', label: t.catFufuKatiKati, icon: Drumstick },
-    { id: 'full_menu', label: t.catFullMenu, icon: LayoutGrid },
-  ];
-
-  function getBadges(dt: DishType): { label: string; icon: typeof Soup }[] {
-    if (dt === 'achu') return [{ label: t.servesAchu, icon: Soup }];
-    if (dt === 'kati_kati') return [{ label: t.servesKatiKati, icon: Drumstick }];
-    return [
-      { label: t.servesAchu, icon: Soup },
-      { label: t.servesKatiKati, icon: Drumstick },
-    ];
-  }
-
   return (
-    <div className="pb-4">
-      {/* Hero */}
-      <div className="relative h-72 overflow-hidden">
-        <img
-          src={HERO_IMAGE}
-          alt="Achu dish"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        {/* Ndop-inspired geometric pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23F59E0B' stroke-width='1.5'%3E%3Crect x='10' y='10' width='60' height='60'/%3E%3Crect x='20' y='20' width='40' height='40'/%3E%3Crect x='30' y='30' width='20' height='20'/%3E%3Cline x1='0' y1='0' x2='80' y2='80'/%3E%3Cline x1='80' y1='0' x2='0' y2='80'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-            backgroundRepeat: 'repeat',
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/60 to-[#FFFDF5]" />
-        <div className="relative z-10 px-5 pt-8 pb-4 max-w-md mx-auto">
-          <div className="inline-flex items-center gap-1.5 bg-amber-500/90 backdrop-blur-sm rounded-full px-3 py-1 mb-4">
-            <Flame className="w-3.5 h-3.5 text-white" />
-            <span className="text-white text-xs font-semibold">{t.heroPill}</span>
+    <div className="min-h-screen bg-[#FFFDF5] pb-24">
+      {/* Header with Vendor Modal Trigger */}
+      <Header onOpenVendorModal={() => setIsVendorModalOpen(true)} />
+
+      {/* Hero / Banner */}
+      <div className="px-5 pt-4 pb-2">
+        <div className="relative rounded-2xl overflow-hidden shadow-lg border border-amber-100 bg-amber-900 min-h-[140px] flex items-center p-5">
+          <img
+            src={HERO_IMAGE}
+            alt="Achu Special"
+            className="absolute inset-0 w-full h-full object-cover opacity-40"
+          />
+          <div className="relative z-10 max-w-[220px]">
+            <span className="inline-block px-2 py-0.5 bg-amber-500 text-white font-bold text-[10px] rounded-full uppercase tracking-wider mb-1">
+              Fresh Daily
+            </span>
+            <h2 className="text-white font-bold text-lg leading-tight mb-1">
+              Authentic Douala Delicacies
+            </h2>
+            <p className="text-amber-100 text-xs font-medium">
+              Pounded fresh. Delivered hot to your door.
+            </p>
           </div>
-          <h1 className="text-3xl font-extrabold text-white leading-tight tracking-tight">
-            Achu & Kati-Kati
-            <span className="block text-amber-400">Express</span>
-          </h1>
-          <p className="text-white/90 text-sm mt-2 leading-relaxed max-w-xs">
-            {t.heroSubtitle}
-          </p>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="px-5 -mt-6 relative z-10 max-w-md mx-auto">
+      {/* Search Bar */}
+      <div className="px-5 mt-3">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.searchPlaceholder}
-            className="w-full pl-12 pr-4 py-3.5 bg-white rounded-2xl shadow-lg shadow-black/5 border border-amber-100 text-sm text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search kitchen, quarter, or dish..."
+            className="w-full bg-white border border-amber-200/80 rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
           />
         </div>
       </div>
 
-      {/* Category filter tabs */}
-      <div className="px-5 mt-4 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-2 pb-1 w-max">
-          {categoryTabs.map((tab) => {
-            const Icon = tab.icon;
-            const active = category === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setCategory(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                  active
-                    ? 'bg-amber-500 text-white shadow-md shadow-amber-500/30'
-                    : 'bg-white text-slate-500 border border-amber-100 hover:border-amber-300'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Quarter dropdown */}
-      <div className="px-5 mt-3 max-w-md mx-auto relative z-50">
-        <div ref={quarterRef} className="relative">
-          <button
-            onClick={() => {
-              setQuarterOpen((o) => !o);
-              setQuarterSearch('');
-            }}
-            className="w-full flex items-center justify-between gap-2 px-4 py-3 bg-white rounded-2xl shadow-sm border border-amber-100 text-sm text-[#1E293B] focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all"
-          >
-            <span className="flex items-center gap-2 min-w-0">
-              <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
-              <span className="font-semibold truncate">
-                {quarter || t.allQuarters}
-              </span>
-            </span>
-            <span className="flex items-center gap-2 shrink-0">
-              <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
-                {quarter ? `${quarterCounts[quarter] || 0}` : `${totalCooks}`}
-              </span>
-              <ChevronDown
-                className={`w-4 h-4 text-slate-400 transition-transform ${quarterOpen ? 'rotate-180' : ''}`}
-              />
-            </span>
-          </button>
-
-          {quarterOpen && (
-            <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-amber-100 overflow-hidden animate-[fadeIn_0.15s_ease-out]">
-              <div className="p-2 border-b border-amber-50">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    autoFocus
-                    value={quarterSearch}
-                    onChange={(e) => setQuarterSearch(e.target.value)}
-                    placeholder={t.searchPlaceholder}
-                    className="w-full pl-9 pr-3 py-2.5 bg-amber-50/50 rounded-xl text-xs text-[#1E293B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
-                </div>
-              </div>
-              <div className="max-h-64 overflow-y-auto py-1">
-                {/* All Quarters option */}
-                <button
-                  onClick={() => {
-                    setQuarter('');
-                    setQuarterOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors ${
-                    quarter === '' ? 'bg-amber-50' : 'hover:bg-amber-50/50'
-                  }`}
-                >
-                  <span className={`text-sm font-semibold ${quarter === '' ? 'text-amber-600' : 'text-[#1E293B]'}`}>
-                    {t.allQuarters}
-                  </span>
-                  <span className="flex items-center gap-2 shrink-0">
-                    <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">
-                      {totalCooks}
-                    </span>
-                    {quarter === '' && <Check className="w-4 h-4 text-amber-500" />}
-                  </span>
-                </button>
-                {filteredQuarters.length === 0 ? (
-                  <p className="px-4 py-3 text-xs text-slate-400 text-center">{t.noVendors}</p>
-                ) : (
-                  filteredQuarters.map((q) => {
-                    const count = quarterCounts[q] || 0;
-                    const active = quarter === q;
-                    return (
-                      <button
-                        key={q}
-                        onClick={() => {
-                          setQuarter(q);
-                          setQuarterOpen(false);
-                        }}
-                        className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors ${
-                          active ? 'bg-amber-50' : 'hover:bg-amber-50/50'
-                        }`}
-                      >
-                        <span className={`text-sm font-semibold ${active ? 'text-amber-600' : 'text-[#1E293B]'}`}>
-                          {q}
-                        </span>
-                        <span className="flex items-center gap-2 shrink-0">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            count > 0 ? 'text-amber-600 bg-amber-50' : 'text-slate-300 bg-slate-50'
-                          }`}>
-                            {count}
-                          </span>
-                          {active && <Check className="w-4 h-4 text-amber-500" />}
-                        </span>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Feature cards */}
-      <div className="px-5 mt-6">
-        <div className="grid grid-cols-3 gap-3">
-          <FeatureCard icon={Utensils} title={t.featurePoundedTitle} desc={t.featurePoundedDesc} />
-          <FeatureCard icon={Truck} title={t.featureFastTitle} desc={t.featureFastDesc} />
-          <FeatureCard icon={ShieldCheck} title={t.featureEscrowTitle} desc={t.featureEscrowDesc} />
-        </div>
-      </div>
-
-      {/* Share App banner */}
+      {/* Categories */}
       <div className="px-5 mt-4">
-        <ShareButton variant="banner" />
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              selectedCategory === 'all'
+                ? 'bg-amber-500 text-white shadow-sm'
+                : 'bg-white text-slate-600 border border-amber-200/60'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" /> All
+          </button>
+          <button
+            onClick={() => setSelectedCategory('achu')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              selectedCategory === 'achu'
+                ? 'bg-amber-500 text-white shadow-sm'
+                : 'bg-white text-slate-600 border border-amber-200/60'
+            }`}
+          >
+            <Soup className="w-3.5 h-3.5" /> Achu
+          </button>
+          <button
+            onClick={() => setSelectedCategory('kati_kati')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              selectedCategory === 'kati_kati'
+                ? 'bg-amber-500 text-white shadow-sm'
+                : 'bg-white text-slate-600 border border-amber-200/60'
+            }`}
+          >
+            <Drumstick className="w-3.5 h-3.5" /> Kati-Kati
+          </button>
+        </div>
       </div>
 
-      {/* Vendors */}
-      <div className="px-5 mt-8">
+      {/* Vendors List */}
+      <div className="px-5 mt-6">
         <div className="flex items-baseline justify-between mb-4">
-          <h2 className="text-lg font-bold text-[#1E293B]">{t.allCooks}</h2>
-          
+          <h2 className="text-lg font-bold text-[#1E293B]">All Douala Cooks</h2>
           <span className="text-xs font-medium text-amber-600">
-            {t.cooksCount(filtered.length)}
+            {filtered.length} cooks
           </span>
         </div>
 
         {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-amber-100 h-36 animate-pulse" />
-            ))}
-          </div>
+          <div className="text-center py-12 text-slate-400 text-sm">Loading cooks...</div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-amber-100 p-8 text-center">
-            <p className="text-slate-400 text-sm">{t.noVendors}</p>
+          <div className="text-center py-12 bg-white rounded-2xl border border-amber-100 p-6">
+            <p className="text-slate-500 font-medium text-sm">No cooks found matching your search.</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {filtered.map((v) => (
-              <VendorCard key={v.id} vendor={v} onOrder={() => onOrder(v)} />
+            {filtered.map((vendor) => (
+              <div
+                key={vendor.id}
+                className="bg-white rounded-2xl border border-amber-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="relative h-36">
+                  <img
+                    src={getVendorImage(vendor.id)}
+                    alt={vendor.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <span className="absolute top-3 right-3 px-2 py-1 bg-emerald-500/90 text-white text-[10px] font-bold rounded-full">
+                    Available now
+                  </span>
+                  <div className="absolute bottom-3 left-3 text-white flex items-center gap-1 text-xs font-bold">
+                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                    <span>{vendor.rating}</span>
+                    <span className="text-slate-300 font-normal">({vendor.reviewsCount})</span>
+                  </div>
+                </div>
+
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-1">
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-base flex items-center gap-1">
+                        {vendor.name}
+                        {vendor.isVerified && (
+                          <BadgeCheck className="w-4 h-4 text-blue-500 fill-blue-100" />
+                        )}
+                      </h3>
+                      <p className="text-xs text-amber-600 font-medium">{vendor.specialty}</p>
+                    </div>
+                    <span className="font-bold text-slate-900 text-sm">
+                      {formatXaf(vendor.basePrice)}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-500 line-clamp-2 my-2">
+                    {vendor.description}
+                  </p>
+
+                  <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-2 border-t border-slate-100">
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-slate-400" /> {vendor.quarter}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-400" /> {vendor.deliveryTime}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => onOrder(vendor)}
+                    className="w-full mt-3 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1"
+                  >
+                    Order Now <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Vendor Registration Modal */}
+      <VendorRegisterModal
+        isOpen={isVendorModalOpen}
+        onClose={() => setIsVendorModalOpen(false)}
+      />
     </div>
   );
-
-  function FeatureCard({
-    icon: Icon,
-    title,
-    desc,
-  }: {
-    icon: typeof Utensils;
-    title: string;
-    desc: string;
-  }) {
-    return (
-      <div className="bg-white rounded-2xl shadow-sm border border-amber-100 p-3 flex flex-col items-center text-center gap-1.5">
-        <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-amber-600" />
-        </div>
-        <h3 className="text-xs font-bold text-[#1E293B] leading-tight">{title}</h3>
-        <p className="text-[10px] text-slate-500 leading-tight">{desc}</p>
-      </div>
-    );
-  }
-
-  function VendorCard({ vendor, onOrder }: { vendor: Vendor; onOrder: () => void }) {
-    const badges = getBadges(vendor.dish_type);
-    return (
-      <div className="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden hover:shadow-md transition-shadow">
-        <div className="relative h-32 overflow-hidden">
-          <img
-            src={vendor.image_url || getVendorImage(vendor.name)}
-            alt={vendor.name}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute top-2 right-2">
-            {vendor.available ? (
-              <span className="bg-green-500/90 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-1 rounded-full">
-                {t.available}
-              </span>
-            ) : (
-              <span className="bg-slate-500/90 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-1 rounded-full">
-                {t.unavailable}
-              </span>
-            )}
-          </div>
-          <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center gap-1">
-            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-            <span className="text-white text-xs font-bold">{vendor.rating.toFixed(1)}</span>
-            <span className="text-white/70 text-[10px]">({vendor.reviews})</span>
-          </div>
-        </div>
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <h3 className="font-bold text-[#1E293B] text-sm leading-tight">{vendor.name}</h3>
-                <span className="inline-flex items-center gap-0.5 bg-blue-50 text-[#2563EB] text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-blue-200 shrink-0 shadow-sm">
-                  <BadgeCheck className="w-3 h-3 text-[#3B82F6]" />
-                  {t.verified}
-                </span>
-              </div>
-              <p className="text-amber-600 text-xs font-medium mt-0.5">{vendor.specialty}</p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-lg font-extrabold text-[#1E293B] leading-none">
-                {vendor.price_xaf.toLocaleString('en-US')}
-              </p>
-              <p className="text-[10px] text-slate-400">{t.xaf}</p>
-            </div>
-          </div>
-          <p className="text-xs text-slate-500 mt-2 line-clamp-2 leading-relaxed">
-            {vendor.description}
-          </p>
-          {/* Dish badges */}
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {badges.map((badge, i) => {
-              const BIcon = badge.icon;
-              return (
-                <span
-                  key={i}
-                  className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-[10px] font-semibold px-2 py-1 rounded-full border border-amber-100"
-                >
-                  <BIcon className="w-3 h-3" />
-                  {badge.label}
-                </span>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-3 mt-3 text-[11px] text-slate-400">
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
-              {vendor.quarter}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {t.minPrep(vendor.prep_minutes)}
-            </span>
-          </div>
-          <button
-            onClick={onOrder}
-            disabled={!vendor.available}
-            className="w-full mt-3 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 text-white text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5"
-          >
-            {t.orderNow}
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-        <VendorRegisterModal
-  isOpen={isVendorModalOpen}
-  onClose={() => setIsVendorModalOpen(false)}
-/>
-      </div>
-      
-    );
-  }
 }
