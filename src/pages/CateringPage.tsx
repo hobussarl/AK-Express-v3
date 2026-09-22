@@ -69,18 +69,22 @@ export default function CateringPage() {
   const selectedVendor = vendors.find((v) => v.id === vendorId);
 
   useEffect(() => {
-    supabase
-      .from('vendors')
-      .select('*')
-      .order('rating', { ascending: false })
-      .then(({ data, error }) => {
+    async function loadVendors() {
+      try {
+        const { data, error } = await supabase
+          .from('vendors')
+          .select('*')
+          .order('rating', { ascending: false });
         if (!error && data && data.length > 0) {
           setVendors(data as Vendor[]);
         } else {
           setVendors(MOCK_VENDORS);
         }
-      })
-      .catch(() => setVendors(MOCK_VENDORS));
+      } catch {
+        setVendors(MOCK_VENDORS);
+      }
+    }
+    loadVendors();
   }, []);
 
   async function handlePaymentConfirm() {
