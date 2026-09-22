@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useLang } from '@/context/LanguageContext';
+import { useLang } from '../context/LanguageContext';
 import { Header } from '../components/Header';
 import ShareButton from '../components/ShareButton';
 import { VendorRegisterModal } from '../components/VendorRegisterModal';
-import { getVendorImage, HERO_IMAGE } from '@/lib/images';
-import { formatXaf } from '@/lib/pricing';
-import { MOCK_VENDORS } from '@/lib/mockVendors';
+import { getVendorImage, HERO_IMAGE } from '../lib/images';
+import { formatXaf } from '../lib/pricing';
+import { MOCK_VENDORS } from '../lib/mockVendors';
 import {
   Search,
   Utensils,
@@ -20,8 +20,6 @@ import {
   Drumstick,
   LayoutGrid,
   BadgeCheck,
-  ChevronDown,
-  Check,
 } from 'lucide-react';
 
 type CategoryFilter = 'all' | 'achu' | 'kati_kati' | 'full_menu';
@@ -59,10 +57,8 @@ export default function HomePage({ onOrder }: Props) {
 
   return (
     <div className="min-h-screen bg-[#FFFDF5] pb-24">
-      {/* Header with Vendor Modal Trigger */}
       <Header onOpenVendorModal={() => setIsVendorModalOpen(true)} />
 
-      {/* Hero / Banner */}
       <div className="px-5 pt-4 pb-2">
         <div className="relative rounded-2xl overflow-hidden shadow-lg border border-amber-100 bg-amber-900 min-h-[140px] flex items-center p-5">
           <img
@@ -78,13 +74,12 @@ export default function HomePage({ onOrder }: Props) {
               Authentic Douala Delicacies
             </h2>
             <p className="text-amber-100 text-xs font-medium">
-              Pounded fresh. Delivered hot to your door.
+              Freshly pounded. Delivered hot to your door.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Search Bar */}
       <div className="px-5 mt-3">
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -98,7 +93,6 @@ export default function HomePage({ onOrder }: Props) {
         </div>
       </div>
 
-      {/* Categories */}
       <div className="px-5 mt-4">
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           <button
@@ -134,12 +128,11 @@ export default function HomePage({ onOrder }: Props) {
         </div>
       </div>
 
-      {/* Vendors List */}
       <div className="px-5 mt-6">
         <div className="flex items-baseline justify-between mb-4">
-          <h2 className="text-lg font-bold text-[#1E293B]">All Douala Cooks</h2>
+          <h2 className="text-lg font-bold text-[#1E293B]">{t.allCooks}</h2>
           <span className="text-xs font-medium text-amber-600">
-            {filtered.length} cooks
+            {t.cooksCount(filtered.length)}
           </span>
         </div>
 
@@ -215,7 +208,6 @@ export default function HomePage({ onOrder }: Props) {
         )}
       </div>
 
-      {/* Vendor Registration Modal */}
       <VendorRegisterModal
         isOpen={isVendorModalOpen}
         onClose={() => setIsVendorModalOpen(false)}
