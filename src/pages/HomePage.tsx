@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLang } from '@/context/LanguageContext';
-import Header from '../components/Header';
+import { Header } from '../components/Header';
 import ShareButton from '../components/ShareButton';
 import { VendorRegisterModal } from '../components/VendorRegisterModal';
 import { getVendorImage, HERO_IMAGE } from '@/lib/images';
